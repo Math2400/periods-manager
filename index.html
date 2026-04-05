@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Periods Manager</title>
+<style>
+/* ── Reset & base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-primary-stack, 'Inter', sans-serif);
+  background: var(--bg, #1e1e2e);
+  color: var(--text-color, #cdd6f4);
+  padding: var(--s2, 16px);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: var(--s2, 16px); display: flex; align-items: center; gap: 10px; }
+h2 { font-size: 1.15rem; font-weight: 600; margin: var(--s2, 16px) 0 var(--s, 8px); color: var(--c-primary, #89b4fa); }
+h3 { font-size: 1rem; font-weight: 600; margin: var(--s, 8px) 0 var(--s-half, 4px); }
+
+/* ── Layout ───────────────────────────────────────────────────────────── */
+.tabs { display: flex; gap: 4px; margin-bottom: var(--s2, 16px); flex-wrap: wrap; }
+.tab-btn {
+  padding: 8px 18px; border-radius: 8px 8px 0 0; cursor: pointer;
+  border: 1px solid var(--divider-color, #45475a); border-bottom: none;
+  background: var(--card-bg, #313244); color: var(--text-color, #cdd6f4);
+  font-size: 0.9rem; font-weight: 500; transition: all 0.2s;
+}
+.tab-btn.active { background: var(--c-primary, #89b4fa); color: #1e1e2e; font-weight: 700; }
+.tab-btn:hover:not(.active) { background: var(--bg-darker, #181825); }
+
+.tab-panel { display: none; animation: fadeIn 0.3s ease; }
+.tab-panel.active { display: block; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── Cards & inputs ───────────────────────────────────────────────────── */
+.card {
+  background: var(--card-bg, #313244); border: 1px solid var(--divider-color, #45475a);
+  border-radius: var(--card-border-radius, 12px); padding: var(--s2, 16px);
+  margin-bottom: var(--s2, 16px); box-shadow: var(--card-shadow, 0 2px 8px rgba(0,0,0,.3));
+}
+
+input[type="text"], input[type="time"], input[type="date"], input[type="search"], select {
+  padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--divider-color, #45475a);
+  background: var(--bg-darker, #181825); color: var(--text-color, #cdd6f4);
+  font-family: inherit; font-size: 0.9rem; width: 100%;
+}
+input[type="time"] { width: auto; min-width: 120px; }
+input[type="date"] { width: auto; min-width: 160px; }
+input[type="search"] { width: 100%; }
+input[type="search"]::placeholder { color: var(--text-color-muted, #a6adc8); }
+
+.form-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.form-row label { min-width: 70px; font-weight: 500; font-size: 0.9rem; color: var(--text-color-muted, #a6adc8); }
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+.btn {
+  padding: 8px 16px; border-radius: 8px; border: 1px solid var(--divider-color, #45475a);
+  background: var(--card-bg, #313244); color: var(--text-color, #cdd6f4);
+  cursor: pointer; font-family: inherit; font-weight: 500; font-size: 0.85rem;
+  transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover { background: var(--bg-darker, #181825); }
+.btn-primary {
+  background: var(--c-primary, #89b4fa); color: #1e1e2e; border-color: var(--c-primary, #89b4fa);
+  font-weight: 700;
+}
+.btn-primary:hover { filter: brightness(0.9); }
+.btn-danger { color: var(--c-warn, #f38ba8); border-color: var(--c-warn, #f38ba8); }
+.btn-danger:hover { background: var(--c-warn, #f38ba8); color: #1e1e2e; }
+.btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+.btn-icon { padding: 6px; min-width: 32px; justify-content: center; }
+
+/* ── Date Selector ────────────────────────────────────────────────────── */
+.date-selector {
+  display: flex; gap: 6px; align-items: center; margin-bottom: var(--s2, 16px);
+  flex-wrap: wrap; padding: 10px 14px; border-radius: 10px;
+  background: var(--card-bg, #313244); border: 1px solid var(--divider-color, #45475a);
+}
+.date-selector .date-btn {
+  padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--divider-color, #45475a);
+  background: var(--bg, #1e1e2e); color: var(--text-color, #cdd6f4);
+  font-size: 0.82rem; font-weight: 500; transition: all 0.15s;
+}
+.date-selector .date-btn.active {
+  background: var(--c-primary, #89b4fa); color: #1e1e2e;
+  font-weight: 700; border-color: var(--c-primary, #89b4fa);
+}
+.date-selector .date-btn:hover:not(.active) { background: var(--bg-darker, #181825); }
+.date-label { font-size: 0.82rem; color: var(--text-color-muted, #a6adc8); font-weight: 500; margin-left: auto; }
+
+/* ── Period list ──────────────────────────────────────────────────────── */
+.period-item {
+  display: flex; align-items: stretch; gap: 8px; padding: 10px 12px;
+  border: 1px solid var(--divider-color, #45475a); border-radius: 10px;
+  margin-bottom: 8px; background: var(--bg, #1e1e2e);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.period-item:hover { border-color: var(--c-primary, #89b4fa); box-shadow: 0 0 0 1px var(--c-primary, #89b4fa) inset; }
+.period-item.is-active { border-color: var(--c-accent, #a6e3a1); box-shadow: 0 0 12px rgba(166,227,161,.15); }
+
+.period-time {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 80px; font-weight: 700; font-size: 0.85rem;
+  color: var(--c-primary, #89b4fa); gap: 2px;
+}
+.period-time .separator { font-size: 0.65rem; color: var(--text-color-muted, #a6adc8); }
+
+.period-info { flex: 1; min-width: 0; }
+.period-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+.period-tasks { font-size: 0.8rem; color: var(--text-color-muted, #a6adc8); }
+
+.period-actions { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+
+/* ── Task chips ───────────────────────────────────────────────────────── */
+.task-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: 0.8rem;
+  background: var(--card-bg, #313244); border: 1px solid var(--divider-color, #45475a);
+  margin: 2px 4px 2px 0; cursor: grab; transition: all 0.15s;
+}
+.task-chip:hover { border-color: var(--c-primary, #89b4fa); }
+.task-chip .remove { cursor: pointer; opacity: 0.6; font-size: 1rem; line-height: 1; }
+.task-chip .remove:hover { opacity: 1; color: var(--c-warn, #f38ba8); }
+.task-chip.is-done { opacity: 0.5; text-decoration: line-through; }
+
+/* ── Task dropzone ────────────────────────────────────────────────────── */
+.task-dropzone {
+  min-height: 40px; border: 2px dashed var(--divider-color, #45475a);
+  border-radius: 8px; padding: 6px 10px; margin-top: 6px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.task-dropzone.drag-over { border-color: var(--c-primary, #89b4fa); background: rgba(137,180,250,.08); }
+.task-dropzone .placeholder { color: var(--text-color-muted, #a6adc8); font-size: 0.8rem; font-style: italic; }
+
+/* ── Available tasks ──────────────────────────────────────────────────── */
+.available-tasks {
+  max-height: 300px; overflow-y: auto; padding: 8px;
+  border: 1px solid var(--divider-color, #45475a); border-radius: 8px;
+  background: var(--bg-darker, #181825);
+}
+.available-task {
+  padding: 6px 12px; border-radius: 6px; cursor: grab;
+  font-size: 0.85rem; margin-bottom: 4px; border: 1px solid transparent;
+  transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+}
+.available-task:hover { background: var(--card-bg, #313244); border-color: var(--divider-color, #45475a); }
+
+/* ── Search bar ───────────────────────────────────────────────────────── */
+.search-bar {
+  position: relative; margin-bottom: var(--s, 8px);
+}
+.search-bar input[type="search"] {
+  padding-left: 32px;
+}
+.search-bar .search-icon {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  font-size: 0.9rem; color: var(--text-color-muted, #a6adc8); pointer-events: none;
+}
+
+/* ── Task section header ──────────────────────────────────────────────── */
+.task-section-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: var(--s2, 16px) 0 var(--s, 8px); cursor: pointer;
+  user-select: none;
+}
+.task-section-header h3 { margin: 0; }
+.task-section-header .toggle-icon {
+  font-size: 0.7rem; color: var(--text-color-muted, #a6adc8);
+  transition: transform 0.2s;
+}
+.task-section-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+.task-count {
+  font-size: 0.75rem; padding: 1px 8px; border-radius: 10px;
+  background: var(--divider-color, #45475a); color: var(--text-color, #cdd6f4);
+  font-weight: 600;
+}
+.task-section-today .task-count { background: var(--c-accent, #a6e3a1); color: #1e1e2e; }
+
+/* ── Timetable grid ───────────────────────────────────────────────────── */
+.day-tabs { display: flex; gap: 2px; margin-bottom: var(--s, 8px); }
+.day-tab {
+  flex: 1; text-align: center; padding: 6px 4px; border-radius: 6px;
+  cursor: pointer; font-size: 0.8rem; font-weight: 500;
+  background: var(--card-bg, #313244); border: 1px solid var(--divider-color, #45475a);
+  color: var(--text-color-muted, #a6adc8); transition: all 0.2s;
+}
+.day-tab.active { background: var(--c-primary, #89b4fa); color: #1e1e2e; font-weight: 700; border-color: var(--c-primary, #89b4fa); }
+.day-tab:hover:not(.active) { background: var(--bg-darker, #181825); }
+
+/* ── Timeline visual ──────────────────────────────────────────────────── */
+.timeline {
+  position: relative; height: 60px; border-radius: 8px;
+  background: var(--bg-darker, #181825); border: 1px solid var(--divider-color, #45475a);
+  margin-bottom: var(--s2, 16px); overflow: hidden;
+}
+.timeline-block {
+  position: absolute; top: 4px; bottom: 4px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; padding: 0 6px; transition: all 0.2s;
+  cursor: pointer; border: 1px solid transparent;
+}
+.timeline-block:hover { filter: brightness(1.2); border-color: #fff3; }
+.timeline-now {
+  position: absolute; top: 0; bottom: 0; width: 2px;
+  background: var(--c-accent, #a6e3a1); z-index: 5;
+}
+
+/* ── Misc ─────────────────────────────────────────────────────────────── */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-color-muted, #a6adc8); }
+.empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+.badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: var(--c-primary, #89b4fa); color: #1e1e2e; font-weight: 700; }
+.badge-accent { background: var(--c-accent, #a6e3a1); }
+.text-muted { color: var(--text-color-muted, #a6adc8); font-size: 0.85rem; }
+.mt { margin-top: var(--s, 8px); }
+.mt2 { margin-top: var(--s2, 16px); }
+.mb { margin-bottom: var(--s, 8px); }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap { gap: 8px; }
+
+/* ── Save Status ──────────────────────────────────────────────────────── */
+#save-status {
+  position: fixed; bottom: 12px; right: 12px; font-size: 0.7rem;
+  padding: 4px 10px; border-radius: 4px; background: rgba(0,0,0,0.4);
+  color: #a6adc8; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+  display: flex; align-items: center; gap: 6px; z-index: 1000;
+}
+#save-status.active { opacity: 1; }
+.spinner { width: 10px; height: 10px; border: 2px solid #a6adc8; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Modal ────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7); display: none; align-items: center;
+  justify-content: center; z-index: 2000; padding: 20px;
+}
+.modal-content {
+  background: var(--card-bg, #313244); border-radius: 16px;
+  width: 100%; max-width: 450px; padding: var(--s2, 16px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 1px solid var(--divider-color, #45475a);
+}
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+/* ── Debug Console ────────────────────────────────────────────────────── */
+.debug-log {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  max-height: 150px; overflow-y: auto;
+  background: rgba(0, 0, 0, 0.85);
+  color: #a6e3a1; font-family: monospace; font-size: 0.75rem;
+  padding: 8px; z-index: 9999; border-top: 2px solid #89b4fa;
+  pointer-events: auto; user-select: text;
+}
+.debug-log-line { margin-bottom: 2px; border-bottom: 1px solid #ffffff10; padding-bottom: 2px; }
+.debug-log-error { color: #f38ba8; }
+.debug-log-warn { color: #f9e2af; }
+.debug-log-header { font-weight: bold; color: #89b4fa; margin-bottom: 4px; display: flex; justify-content: space-between; }
+
+/* ── Project & Tag Styles ─────────────────────────────────────────────── */
+.project-group { margin-bottom: 12px; border: 1px solid var(--divider-color, #45475a); border-radius: 8px; overflow: hidden; }
+.project-header {
+  padding: 6px 12px; background: var(--card-bg, #313244);
+  font-size: 0.8rem; font-weight: 700; color: var(--text-color, #cdd6f4);
+  display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--divider-color, #45475a);
+}
+.project-icon { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.task-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.task-tag {
+  font-size: 0.65rem; padding: 1px 6px; border-radius: 4px;
+  background: var(--divider-color, #45475a); color: var(--text-color, #cdd6f4);
+  font-weight: 600; opacity: 0.8;
+}
+
+/* ── Interactive Overlays ────────────────────────────────────────────── */
+.assign-popup {
+  position: fixed; z-index: 3000; background: var(--card-bg, #313244);
+  border: 1px solid var(--c-primary, #89b4fa); border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: none; min-width: 180px;
+  overflow: hidden; animation: fadeIn 0.15s ease;
+}
+.assign-option {
+  padding: 10px 14px; cursor: pointer; font-size: 0.85rem;
+  border-bottom: 1px solid var(--divider-color, #45475a);
+  transition: background 0.2s; display: flex; align-items: center; gap: 8px;
+}
+.assign-option:hover { background: var(--bg-darker, #181825); }
+.assign-option:last-child { border-bottom: none; }
+.assign-option .time { font-size: 0.7rem; color: var(--text-color-muted, #a6adc8); }
+
+.details-modal { max-width: 550px !important; }
+.details-section { margin-bottom: 16px; }
+.details-label { font-size: 0.75rem; color: var(--text-color-muted, #a6adc8); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+.details-content { font-size: 0.9rem; color: var(--text-color, #cdd6f4); white-space: pre-wrap; word-break: break-word; }
+.details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+</style>
+</head>
+<body>
+<div id="save-status"></div>
+<h1>⏰ Periods Manager</h1>
+
+<div id="debug-log-container" class="debug-log">
+  <div class="debug-log-header">
+    <span>SYSTEM LOGS:</span>
+    <span onclick="document.getElementById('debug-log-container').style.display='none'" style="cursor:pointer">[close]</span>
+  </div>
+  <div id="debug-log-content"></div>
+</div>
+
+<!-- ── Date Selector ──────────────────────────────────────────────── -->
+<div class="date-selector" id="date-selector">
+  <button class="date-btn active" onclick="setDateToday()">📅 Today</button>
+  <button class="date-btn" onclick="setDateTomorrow()">➡️ Tomorrow</button>
+  <input type="date" id="custom-date" style="width:auto; min-width: 140px; font-size: 0.82rem;" onchange="setDateCustom(this.value)" />
+  <span class="date-label" id="date-label"></span>
+</div>
+
+<div class="tabs">
+  <div class="tab-btn active" onclick="switchTab('today')">Schedule</div>
+  <div class="tab-btn" onclick="switchTab('timeline')">Timeline</div>
+  <div class="tab-btn" onclick="switchTab('assign')">Assignments</div>
+  <div class="tab-btn" onclick="switchTab('timetables')">Templates</div>
+</div>
+
+<!-- Tab: Today -->
+<div id="today" class="tab-panel active">
+  <div id="today-periods"></div>
+</div>
+
+<!-- Tab: Timeline -->
+<div id="timeline" class="tab-panel">
+  <h2>Daily View</h2>
+  <div id="timeline-container"></div>
+</div>
+
+<!-- Tab: Assign -->
+<div id="assign" class="tab-panel">
+  <h2>Task Assignment</h2>
+  <div id="task-assignment"></div>
+</div>
+
+<!-- Tab: Timetables -->
+<div id="timetables" class="tab-panel">
+  <div id="timetable-list">
+    <div id="timetable-list-container"></div>
+  </div>
+  <div id="timetable-editor" style="display:none">
+    <!-- Dynamic editor content -->
+  </div>
+</div>
+
+<!-- Modal: Period -->
+<div id="modal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 id="m-title">Add Period</h2>
+    <div class="form-row">
+      <label>Title</label>
+      <input type="text" id="p-title" placeholder="e.g. Deep Work" />
+    </div>
+    <div class="form-row">
+      <label>Start</label>
+      <input type="time" id="p-start" />
+    </div>
+    <div class="form-row">
+      <label>End</label>
+      <input type="time" id="p-end" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePeriod()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Create Timetable -->
+<div id="tt-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 id="m-tt-title">New Template</h2>
+    <div class="form-row">
+      <label>Name</label>
+      <input type="text" id="m-tt-name" placeholder="Work Week" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeTTModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createTimetable()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Task Details -->
+<div id="details-modal" class="modal-overlay" onclick="closeDetailsModal(event)">
+  <div class="modal-content details-modal" onclick="event.stopPropagation()">
+    <div class="flex-between mb">
+      <h2 id="dt-title" style="margin:0">Task Details</h2>
+      <button class="btn btn-sm" onclick="closeDetailsModal()">Close</button>
+    </div>
+    <div class="details-grid mb">
+      <div>
+        <div class="details-label">Project</div>
+        <div id="dt-project" class="details-content">---</div>
+      </div>
+      <div>
+        <div class="details-label">Status</div>
+        <div id="dt-status" class="details-content">---</div>
+      </div>
+    </div>
+    <div class="details-section">
+      <div class="details-label">Tags</div>
+      <div id="dt-tags" class="task-tags"></div>
+    </div>
+    <div class="details-section">
+      <div class="details-label">Time Tracked</div>
+      <div id="dt-time" class="details-content">---</div>
+    </div>
+    <div class="details-section">
+      <div class="details-label">Notes</div>
+      <div id="dt-notes" class="details-content" style="max-height: 200px; overflow-y: auto; background: var(--bg-darker); padding: 10px; border-radius: 8px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Popup -->
+<div id="assign-popup" class="assign-popup"></div>
+
+<script>
+// ── Debug Console Logic ──────────────────────────────────────────────────────
+(function() {
+  var logContent = null;
+  function addLog(msg, type) {
+    if (!logContent) logContent = document.getElementById('debug-log-content');
+    if (!logContent) return;
+    var line = document.createElement('div');
+    line.className = 'debug-log-line' + (type ? ' debug-log-' + type : '');
+    line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    logContent.appendChild(line);
+    logContent.parentElement.scrollTop = logContent.parentElement.scrollHeight;
+  }
+  var oldLog = console.log;
+  var oldError = console.error;
+  var oldWarn = console.warn;
+  console.log = function() { addLog(Array.from(arguments).join(' ')); oldLog.apply(console, arguments); };
+  console.error = function() { addLog(Array.from(arguments).join(' '), 'error'); oldError.apply(console, arguments); };
+  console.warn = function() { addLog(Array.from(arguments).join(' '), 'warn'); oldWarn.apply(console, arguments); };
+  window.addEventListener('error', function(e) { addLog('JS Error: ' + e.message, 'error'); });
+})();
+
+// ── State ────────────────────────────────────────────────────────────────────
+var data = { periods: {}, timetables: {}, dailyOverrides: {}, activeTimetableId: null };
+var allTasks = [];
+var allProjects = [];
+var allTags = [];
+var editingTimetableId = null;
+var editingDayIndex = 0;
+var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var COLORS = 8;
+var saveTimeout = null;
+var taskSearchQuery = '';
+var allTasksSectionCollapsed = false;
+
+// ── Planning Date ────────────────────────────────────────────────────────────
+// This controls which date the UI operates on (Today, Tomorrow, or custom)
+var currentPlanningDate = null; // Date object, defaults to today on init
+
+function planningDateStr() {
+  var d = currentPlanningDate || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function tomorrowStr() {
+  var d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function formatDateLabel(dateStr) {
+  var today = todayStr();
+  var tomorrow = tomorrowStr();
+  if (dateStr === today) return 'Today — ' + dateStr;
+  if (dateStr === tomorrow) return 'Tomorrow — ' + dateStr;
+  // Show day name for other dates
+  var d = new Date(dateStr + 'T12:00:00');
+  var dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()];
+  return dayName + ' — ' + dateStr;
+}
+
+function setDateToday() {
+  currentPlanningDate = new Date();
+  document.getElementById('custom-date').value = '';
+  updateDateSelector();
+  refreshCurrentTab();
+}
+
+function setDateTomorrow() {
+  var d = new Date();
+  d.setDate(d.getDate() + 1);
+  currentPlanningDate = d;
+  document.getElementById('custom-date').value = '';
+  updateDateSelector();
+  refreshCurrentTab();
+}
+
+function setDateCustom(val) {
+  if (!val) return;
+  currentPlanningDate = new Date(val + 'T12:00:00');
+  updateDateSelector();
+  refreshCurrentTab();
+}
+
+function updateDateSelector() {
+  var ds = planningDateStr();
+  var today = todayStr();
+  var tomorrow = tomorrowStr();
+  var btns = document.querySelectorAll('.date-selector .date-btn');
+  btns[0].classList.toggle('active', ds === today);
+  btns[1].classList.toggle('active', ds === tomorrow);
+  document.getElementById('date-label').textContent = formatDateLabel(ds);
+  // If it's a custom date (not today or tomorrow), highlight the input instead
+  if (ds !== today && ds !== tomorrow) {
+    document.getElementById('custom-date').value = ds;
+  }
+}
+
+function refreshCurrentTab() {
+  var activeTab = document.querySelector('.tab-panel.active');
+  if (!activeTab) return;
+  if (activeTab.id === 'today') renderTodayPeriods();
+  else if (activeTab.id === 'timeline') renderTimeline();
+  else if (activeTab.id === 'assign') {
+    Promise.all([loadTasks(), loadProjects(), loadTags()]).then(renderTaskAssignment);
+  }
+}
+
+function dayIndex(d) { return (d.getDay() + 6) % 7; }
+function parseTime(s) { var p = s.split(':'); return parseInt(p[0],10)*60 + parseInt(p[1],10); }
+function fmtTime(mins) { return String(Math.floor(mins/60)).padStart(2,'0') + ':' + String(mins%60).padStart(2,'0'); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
+
+// ── Persistence (debounced) ──────────────────────────────────────────────────
+async function executeSave() {
+  showSaveStatus('Saving...', true);
+  try {
+    await PluginAPI.persistDataSynced(JSON.stringify(data));
+    showSaveStatus('Saved ✓', false);
+  } catch (e) {
+    console.error('Save failed:', e);
+    showSaveStatus('Save queued', false);
+  }
+}
+
+function saveData() {
+  showSaveStatus('Saving...', true);
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(executeSave, 200); // small initial debounce
+}
+
+function showSaveStatus(text, showSpinner) {
+  var el = document.getElementById('save-status');
+  el.innerHTML = (showSpinner ? '<div class="spinner"></div>' : '') + '<span>' + text + '</span>';
+  el.classList.add('active');
+  if (!showSpinner) setTimeout(function() { el.classList.remove('active'); }, 2000);
+}
+
+async function loadDataFromStore() {
+  try {
+    var raw = await PluginAPI.loadSyncedData();
+    if (raw) { var parsed = JSON.parse(raw); if (parsed) data = parsed; }
+  } catch(e) { console.error('Load failed:', e); }
+  if (!data.periods) data.periods = {};
+  if (!data.timetables) data.timetables = {};
+  if (!data.dailyOverrides) data.dailyOverrides = {};
+}
+
+async function loadTasks() { try { allTasks = await PluginAPI.getTasks(); } catch(e) { allTasks = []; } }
+async function loadProjects() { try { allProjects = await PluginAPI.getAllProjects(); } catch(e) { allProjects = []; } }
+async function loadTags() { try { allTags = await PluginAPI.getAllTags(); } catch(e) { allTags = []; } }
+
+// ── Get/Set effective periods for the selected planning date ─────────────────
+function getEffectivePeriodsForDate(dateStr) {
+  // 1. Daily override wins
+  if (data.dailyOverrides && data.dailyOverrides[dateStr]) return data.dailyOverrides[dateStr].periods || [];
+  // 2. Active timetable for this weekday
+  if (data.activeTimetableId && data.timetables[data.activeTimetableId]) {
+    var tt = data.timetables[data.activeTimetableId];
+    var d = new Date(dateStr + 'T12:00:00');
+    var dow = dayIndex(d);
+    if (tt.days[dow] && tt.days[dow].periods) return tt.days[dow].periods;
+  }
+  return [];
+}
+
+function getEffectivePeriods() {
+  return getEffectivePeriodsForDate(planningDateStr());
+}
+
+function isDateOverridden(dateStr) {
+  return !!(data.dailyOverrides && data.dailyOverrides[dateStr]);
+}
+
+function resetDateToTemplate(dateStr) {
+  if (data.dailyOverrides && data.dailyOverrides[dateStr]) {
+    delete data.dailyOverrides[dateStr];
+    saveData();
+    refreshCurrentTab();
+  }
+}
+
+function setEffectivePeriodsForDate(dateStr, periods) {
+  if (!data.dailyOverrides) data.dailyOverrides = {};
+  data.dailyOverrides[dateStr] = { periods: periods };
+}
+
+function setEffectivePeriods(periods) {
+  setEffectivePeriodsForDate(planningDateStr(), periods);
+}
+
+function switchTab(tabId) {
+  editingTimetableId = null;
+  modalPeriodIdx = null;
+  modalTTPeriodIdx = null;
+
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.onclick.toString().includes(tabId));
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p) {
+    p.classList.toggle('active', p.id === tabId);
+  });
+
+  document.getElementById('timetable-list').style.display = 'block';
+  document.getElementById('timetable-editor').style.display = 'none';
+
+  if (tabId === 'today') renderTodayPeriods();
+  else if (tabId === 'timeline') renderTimeline();
+  else if (tabId === 'assign') { loadTasks().then(renderTaskAssignment); }
+  else if (tabId === 'timetables') renderTimetableList();
+}
+
+// ── Today UI ─────────────────────────────────────────────────────────────────
+function renderTodayPeriods() {
+  var container = document.getElementById('today-periods');
+  var ds = planningDateStr();
+  var periods = getEffectivePeriods();
+  var overridden = isDateOverridden(ds);
+  var currentTT = data.activeTimetableId ? data.timetables[data.activeTimetableId] : null;
+  var isToday = ds === todayStr();
+
+  periods.sort(function(a,b) { return parseTime(a.startTime) - parseTime(b.startTime); });
+
+  var html = '<div class="flex-between"><h2>Schedule</h2><button class="btn btn-primary" onclick="openAddPeriodModal()">+ Add</button></div>';
+
+  // Status Header
+  html += '<div class="card" style="padding: 10px 16px; margin-bottom: 12px; font-size: 0.85rem; border-left: 4px solid ' + (overridden ? 'var(--c-warn, #f38ba8)' : 'var(--c-accent, #a6e3a1)') + '">';
+  if (overridden) {
+    html += '<div class="flex-between"><span><strong>Mode:</strong> Custom Overrides</span><button class="btn btn-sm" onclick="resetDateToTemplate(\'' + ds + '\')">Reset to Template</button></div>';
+  } else if (currentTT) {
+    html += '<span><strong>Mode:</strong> Using Template: <em>' + escHtml(currentTT.name) + '</em></span>';
+  } else {
+    html += '<span><strong>Mode:</strong> No template active. Add periods to start.</span>';
+  }
+  html += '</div>';
+
+  if (periods.length === 0) html += '<div class="empty-state"><div class="icon">📅</div><p>No periods scheduled for ' + formatDateLabel(ds) + '.</p></div>';
+  else {
+    var now = new Date();
+    var nowMins = now.getHours() * 60 + now.getMinutes();
+    for (var i = 0; i < periods.length; i++) {
+      var p = periods[i];
+      var start = parseTime(p.startTime);
+      var end = parseTime(p.endTime);
+      var isActive = isToday && nowMins >= start && nowMins < end;
+      html += '<div class="period-item' + (isActive ? ' is-active' : '') + '"><div class="period-time"><span>' + p.startTime + '</span><span class="separator">▼</span><span>' + p.endTime + '</span></div><div class="period-info" onclick="event.stopPropagation();"><div class="period-title">' + escHtml(p.title) + (isActive ? ' <span class="badge badge-accent">NOW</span>' : '') + '</div><div class="period-tasks">' + (p.taskIds && p.taskIds.length ? p.taskIds.length + ' tasks' : 'No tasks') + '</div></div><div class="period-actions"><button class="btn btn-sm btn-icon" onclick="openEditPeriodModal('+i+')">✏️</button><button class="btn btn-sm btn-icon btn-danger" onclick="deletePeriod('+i+')">🗑️</button></div></div>';
+    }
+  }
+  container.innerHTML = html;
+}
+
+function renderTimeline() {
+  var container = document.getElementById('timeline-container');
+  var periods = getEffectivePeriods();
+  var ds = planningDateStr();
+  var isToday = ds === todayStr();
+  var html = '<div class="timeline">';
+  if (isToday) {
+    var now = new Date();
+    var nowPct = (now.getHours() * 60 + now.getMinutes()) / 14.4;
+    html += '<div class="timeline-now" style="left:' + nowPct + '%"></div>';
+  }
+  for (var i = 0; i < periods.length; i++) {
+    var p = periods[i];
+    var start = parseTime(p.startTime) / 14.4;
+    var width = (parseTime(p.endTime) / 14.4) - start;
+    html += '<div class="timeline-block" style="left:'+start+'%;width:'+width+'%;background:var(--c-primary);color:#1e1e2e" title="'+escAttr(p.title)+'">'+escHtml(p.title)+'</div>';
+  }
+  html += '</div><div class="flex-between text-muted"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:59</span></div>';
+  container.innerHTML = html;
+}
+
+// ── Modals & Controls ────────────────────────────────────────────────────────
+var modalPeriodIdx = null;
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+function openAddPeriodModal() { modalPeriodIdx = null; document.getElementById('m-title').innerText = 'Add Period'; document.getElementById('p-title').value = ''; document.getElementById('p-start').value = '08:00'; document.getElementById('p-end').value = '09:00'; document.getElementById('modal').style.display = 'flex'; }
+function openEditPeriodModal(idx) { modalPeriodIdx = idx; var p = getEffectivePeriods()[idx]; document.getElementById('m-title').innerText = 'Edit Period'; document.getElementById('p-title').value = p.title; document.getElementById('p-start').value = p.startTime; document.getElementById('p-end').value = p.endTime; document.getElementById('modal').style.display = 'flex'; }
+
+function savePeriod() {
+  if (editingTimetableId !== null) { saveTTPeriodActual(); return; }
+
+  var title = document.getElementById('p-title').value.trim();
+  var start = document.getElementById('p-start').value;
+  var end = document.getElementById('p-end').value;
+  if (!title || !start || !end) return;
+  var periods = getEffectivePeriods();
+  var p = { title: title, startTime: start, endTime: end, taskIds: [] };
+  if (modalPeriodIdx === null) periods.push(p);
+  else { p.taskIds = periods[modalPeriodIdx].taskIds || []; periods[modalPeriodIdx] = p; }
+  setEffectivePeriods(periods); saveData(); closeModal(); renderTodayPeriods();
+}
+
+function deletePeriod(idx) { var periods = getEffectivePeriods(); periods.splice(idx, 1); setEffectivePeriods(periods); saveData(); renderTodayPeriods(); }
+
+// ── Timetable management ─────────────────────────────────────────────────────
+function renderTimetableList() {
+  var container = document.getElementById('timetable-list-container');
+  var html = '<div class="flex-between"><h2>Templates</h2><button class="btn btn-primary" onclick="openCreateTimetableModal()">+ New</button></div>';
+  var tts = Object.keys(data.timetables);
+  if (tts.length === 0) html += '<div class="empty-state"><div class="icon">📋</div><p>No weekly templates defined yet.</p></div>';
+  else {
+    for (var i = 0; i < tts.length; i++) {
+      var id = tts[i]; var tt = data.timetables[id]; var isActive = data.activeTimetableId === id;
+      var totalPeriods = 0;
+      for (var d = 0; d < 7; d++) if (tt.days[d] && tt.days[d].periods) totalPeriods += tt.days[d].periods.length;
+
+      html += '<div class="card"><div class="flex-between"><div><strong>' + escHtml(tt.name) + '</strong><br/><span class="text-muted">' + totalPeriods + ' periods defined</span>' + (isActive ? ' <span class="badge badge-accent">ACTIVE</span>' : '') + '</div><div class="gap" style="display:flex; flex-direction:column">';
+      if (isActive) html += '<button class="btn btn-sm" onclick="deactivateTimetable()">Deactivate</button>';
+      else html += '<button class="btn btn-sm btn-primary" onclick="activateTimetable(\''+id+'\')">Activate</button>';
+      html += '<div class="gap" style="display:flex"><button class="btn btn-sm btn-icon" onclick="editTimetable(\''+id+'\')">✏️</button><button class="btn btn-sm btn-icon btn-danger" onclick="deleteTimetable(\''+id+'\')">🗑️</button></div></div></div></div>';
+    }
+  }
+  container.innerHTML = html;
+}
+
+function openCreateTimetableModal() { document.getElementById('m-tt-name').value = 'Work Week'; document.getElementById('tt-modal').style.display = 'flex'; }
+function closeTTModal() { document.getElementById('tt-modal').style.display = 'none'; }
+function createTimetable() { var name = document.getElementById('m-tt-name').value.trim(); if (!name) return; var id = uid(); data.timetables[id] = { name: name, days: {} }; for (var d = 0; d < 7; d++) data.timetables[id].days[d] = { periods: [] }; saveData(); closeTTModal(); editTimetable(id); }
+function activateTimetable(id) { data.activeTimetableId = id; var ds = planningDateStr(); if (data.dailyOverrides && data.dailyOverrides[ds]) delete data.dailyOverrides[ds]; saveData(); renderTimetableList(); renderTodayPeriods(); }
+function deactivateTimetable() { data.activeTimetableId = null; saveData(); renderTimetableList(); renderTodayPeriods(); }
+function deleteTimetable(id) { if (data.activeTimetableId === id) data.activeTimetableId = null; delete data.timetables[id]; saveData(); renderTimetableList(); }
+function editTimetable(id) { editingTimetableId = id; editingDayIndex = dayIndex(new Date()); document.getElementById('timetable-list').style.display = 'none'; document.getElementById('timetable-editor').style.display = 'block'; renderTimetableEditor(); }
+function closeTimetableEditor() { editingTimetableId = null; document.getElementById('timetable-editor').style.display = 'none'; document.getElementById('timetable-list').style.display = 'block'; renderTimetableList(); }
+
+function renderTimetableEditor() {
+  var container = document.getElementById('timetable-editor'); var tt = data.timetables[editingTimetableId]; if (!tt) { closeTimetableEditor(); return; }
+  var html = '<div class="flex-between"><h2>'+escHtml(tt.name)+'</h2><button class="btn" onclick="closeTimetableEditor()">← Back</button></div>';
+  html += '<div class="day-tabs">';
+  for (var d = 0; d < 7; d++) html += '<div class="day-tab' + (d === editingDayIndex ? ' active' : '') + '" onclick="editingDayIndex='+d+';renderTimetableEditor()">' + DAYS[d] + '</div>';
+  html += '</div>';
+  var dayData = tt.days[editingDayIndex] || { periods: [] };
+  html += '<div class="flex-between mb"><h3>' + DAYS[editingDayIndex] + ' Periods</h3><button class="btn btn-primary btn-sm" onclick="addTTPeriod()">+ Add</button></div>';
+  if (dayData.periods.length === 0) html += '<p class="text-muted" style="text-align:center; padding: 20px">No periods for this day.</p>';
+  else {
+    for (var i = 0; i < dayData.periods.length; i++) {
+      var p = dayData.periods[i];
+      html += '<div class="period-item"><div class="period-time"><span>' + p.startTime + '</span>▼<span>' + p.endTime + '</span></div><div class="period-info"><strong>' + escHtml(p.title) + '</strong></div><div class="period-actions"><button class="btn btn-sm btn-icon" onclick="editTTPeriod('+i+')">✏️</button><button class="btn btn-sm btn-icon btn-danger" onclick="deleteTTPeriod('+i+')">🗑️</button></div></div>';
+    }
+  }
+  container.innerHTML = html;
+}
+
+// TT Helpers
+var modalTTPeriodIdx = null;
+function addTTPeriod() {
+  modalTTPeriodIdx = null;
+  document.getElementById('m-title').innerText = 'Add Template Period';
+  document.getElementById('p-title').value = '';
+  document.getElementById('p-start').value = '08:00';
+  document.getElementById('p-end').value = '09:00';
+  document.getElementById('modal').style.display = 'flex';
+}
+function editTTPeriod(idx) { modalTTPeriodIdx = idx; var p = data.timetables[editingTimetableId].days[editingDayIndex].periods[idx]; document.getElementById('m-title').innerText = 'Edit Template Period'; document.getElementById('p-title').value = p.title; document.getElementById('p-start').value = p.startTime; document.getElementById('p-end').value = p.endTime; document.getElementById('modal').style.display = 'flex'; }
+function deleteTTPeriod(idx) { data.timetables[editingTimetableId].days[editingDayIndex].periods.splice(idx, 1); saveData(); renderTimetableEditor(); }
+
+function saveTTPeriodActual() {
+  var t = document.getElementById('p-title').value.trim(); var s = document.getElementById('p-start').value; var e = document.getElementById('p-end').value; if (!t || !s || !e) return;
+  var ps = data.timetables[editingTimetableId].days[editingDayIndex].periods; var p = { title: t, startTime: s, endTime: e, taskIds: [] };
+  if (modalTTPeriodIdx === null) ps.push(p); else { p.taskIds = ps[modalTTPeriodIdx].taskIds || []; ps[modalTTPeriodIdx] = p; }
+  saveData(); closeModal(); renderTimetableEditor();
+}
+
+// ── Task assignment (with search + split) ────────────────────────────────────
+var draggedTaskId = null;
+
+function renderTaskAssignment() {
+  var container = document.getElementById('task-assignment');
+  var ds = planningDateStr();
+  var periods = getEffectivePeriods();
+
+  if (periods.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No periods for ' + formatDateLabel(ds) + '. Please define periods in the "Schedule" or "Templates" tab first.</p></div>';
+    return;
+  }
+
+  var html = '<div class="mb">Assign tasks to your periods by dragging them from the list below.</div>';
+
+  // ── Period drop zones ──
+  for (var i = 0; i < periods.length; i++) {
+    var p = periods[i];
+    html += '<div class="card" style="padding: 12px"><h3>' + escHtml(p.title) + ' <small class="text-muted">(' + p.startTime + '-' + p.endTime + ')</small></h3><div class="task-dropzone" ondragover="onDragOver(event)" ondrop="onDrop(event,'+i+')" ondragleave="onDragLeave(event)">';
+    if (p.taskIds && p.taskIds.length) {
+      for (var j = 0; j < p.taskIds.length; j++) {
+        var t = allTasks.find(function(tk) { return tk.id === p.taskIds[j]; });
+        if (t) html += '<span class="task-chip' + (t.isDone ? ' is-done' : '') + '" draggable="true" ondragstart="onTaskChipDragStart(event,\''+t.id+'\')" onclick="openTaskDetails(\''+t.id+'\')">' + escHtml(t.title.substring(0,25)) + '<span class="remove" onclick="event.stopPropagation(); removeTaskFromPeriodAssign('+i+',\''+t.id+'\')">×</span></span>';
+      }
+    } else html += '<span class="placeholder">Drop tasks here...</span>';
+    html += '</div></div>';
+  }
+
+  // ── Search bar ──
+  html += '<div class="search-bar mt2"><span class="search-icon">🔍</span><input type="search" id="task-search" placeholder="Search tasks by name..." oninput="onTaskSearch(this.value)" value="' + escAttr(taskSearchQuery) + '" /></div>';
+
+  var undone = allTasks.filter(function(t) { return !t.isDone && !t.parentId; });
+  var query = taskSearchQuery.toLowerCase();
+
+  // Today's tasks
+  var todayTasks = undone.filter(function(t) { return t.dueDay === ds; });
+  var otherTasks = undone.filter(function(t) { return t.dueDay !== ds; });
+
+  if (query) {
+    todayTasks = todayTasks.filter(function(t) { return t.title.toLowerCase().indexOf(query) !== -1; });
+    otherTasks = otherTasks.filter(function(t) { return t.title.toLowerCase().indexOf(query) !== -1; });
+  }
+
+  // ── Renderer helper for grouped tasks ──
+  function renderGroupedTasks(tasks) {
+    var groups = {};
+    tasks.forEach(function(t) {
+      var pid = t.projectId || 'no-project';
+      if (!groups[pid]) groups[pid] = [];
+      groups[pid].push(t);
+    });
+
+    var groupHtml = '';
+    var pids = Object.keys(groups);
+    // Sort projects: No Project first, then Alpha
+    pids.sort(function(a, b) {
+      if (a === 'no-project') return -1;
+      if (b === 'no-project') return 1;
+      var pA = allProjects.find(function(p){return p.id === a;});
+      var pB = allProjects.find(function(p){return p.id === b;});
+      return (pA ? pA.title : a).localeCompare(pB ? pB.title : b);
+    });
+
+    for (var k = 0; k < pids.length; k++) {
+      var pid = pids[k];
+      var project = allProjects.find(function(p){return p.id === pid;});
+      var groupTasks = groups[pid];
+
+      groupHtml += '<div class="project-group"><div class="project-header">';
+      if (project) {
+        groupHtml += '<span class="project-icon" style="background:' + (project.theme?.primary || '#89b4fa') + '"></span>';
+        groupHtml += '<span>' + escHtml(project.title) + '</span>';
+      } else {
+        groupHtml += '<span>Inbox / No Project</span>';
+      }
+      groupHtml += '<span class="task-count" style="margin-left:auto">' + groupTasks.length + '</span></div>';
+      groupHtml += '<div class="available-tasks" style="border:none; border-radius:0; max-height:none">';
+
+      for (var m = 0; m < groupTasks.length; m++) {
+        var t = groupTasks[m];
+        groupHtml += '<div class="available-task" draggable="true" ondragstart="onTaskDragStart(event,\''+t.id+'\')" onclick="openAssignPopup(event, \''+t.id+'\')" style="flex-direction:column; align-items:flex-start; gap:0; cursor:pointer">';
+        groupHtml += '<div>⠿ ' + escHtml(t.title.substring(0,80)) + '</div>';
+
+        // Render Tags
+        if (t.tagIds && t.tagIds.length) {
+          groupHtml += '<div class="task-tags">';
+          for (var ti = 0; ti < t.tagIds.length; ti++) {
+            var tagId = t.tagIds[ti];
+            var tag = allTags.find(function(tg){return tg.id === tagId;});
+            if (tag) groupHtml += '<span class="task-tag" style="background:' + (tag.color || 'var(--divider-color)') + '">' + escHtml(tag.title) + '</span>';
+          }
+          groupHtml += '</div>';
+        }
+        groupHtml += '</div>';
+      }
+      groupHtml += '</div></div>';
+    }
+    return groupHtml || '<p class="text-muted" style="text-align:center; padding: 10px">No tasks found.</p>';
+  }
+
+  // ── Today Section ──
+  html += '<h3>📌 Tasks for ' + formatDateLabel(ds) + '</h3>';
+  html += renderGroupedTasks(todayTasks);
+
+  // ── All Tasks Section ──
+  html += '<div class="task-section-all mt2"><div class="task-section-header" onclick="toggleAllTasksSection()">';
+  html += '<span class="toggle-icon' + (allTasksSectionCollapsed ? ' collapsed' : '') + '">▾</span>';
+  html += '<h3>📂 Other Tasks</h3><span class="task-count">' + otherTasks.length + '</span></div>';
+  html += '<div id="all-tasks-list" style="' + (allTasksSectionCollapsed ? 'display:none' : '') + '">';
+  html += renderGroupedTasks(otherTasks);
+  html += '</div></div>';
+
+  container.innerHTML = html;
+
+  if (taskSearchQuery) {
+    var searchEl = document.getElementById('task-search');
+    if (searchEl) { searchEl.focus(); searchEl.setSelectionRange(searchEl.value.length, searchEl.value.length); }
+  }
+}
+
+function onTaskSearch(val) {
+  taskSearchQuery = val;
+  renderTaskAssignment();
+}
+
+function openAssignPopup(event, taskId) {
+  event.stopPropagation();
+  var popup = document.getElementById('assign-popup');
+  var periods = getEffectivePeriods();
+  
+  if (periods.length === 0) {
+    alert('Please define periods first!');
+    return;
+  }
+
+  var html = '';
+  periods.forEach(function(p, idx) {
+    html += '<div class="assign-option" onclick="assignTaskToPeriod(\''+taskId+'\', '+idx+')">';
+    html += '<span>' + escHtml(p.title) + '</span>';
+    html += '<span class="time">' + p.startTime + '</span>';
+    html += '</div>';
+  });
+  
+  popup.innerHTML = html;
+  popup.style.display = 'block';
+  
+  // Position popup
+  var rect = event.currentTarget.getBoundingClientRect();
+  popup.style.top = rect.bottom + 'px';
+  popup.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
+  
+  // Close on click outside
+  setTimeout(function() {
+    window.addEventListener('click', closeAssignPopup);
+  }, 0);
+}
+
+function closeAssignPopup() {
+  document.getElementById('assign-popup').style.display = 'none';
+  window.removeEventListener('click', closeAssignPopup);
+}
+
+function assignTaskToPeriod(taskId, periodIdx) {
+  var ps = getEffectivePeriods();
+  // Remove from all periods first
+  for (var i = 0; i < ps.length; i++) if (ps[i].taskIds) ps[i].taskIds = ps[i].taskIds.filter(function(tid) { return tid !== taskId; });
+
+  if (!ps[periodIdx].taskIds) ps[periodIdx].taskIds = [];
+  ps[periodIdx].taskIds.push(taskId);
+
+  setEffectivePeriods(ps);
+  saveData();
+  renderTaskAssignment();
+  renderTodayPeriods();
+}
+
+function openTaskDetails(taskId) {
+  var t = allTasks.find(function(tk) { return tk.id === taskId; });
+  if (!t) return;
+  
+  document.getElementById('dt-title').textContent = t.title;
+  var project = allProjects.find(function(p) { return p.id === t.projectId; });
+  document.getElementById('dt-project').textContent = project ? project.title : 'No Project';
+  document.getElementById('dt-status').textContent = t.isDone ? 'Done ✓' : 'In Progress';
+  
+  // Tags
+  var tagHtml = '';
+  if (t.tagIds && t.tagIds.length) {
+    t.tagIds.forEach(function(tid) {
+      var tag = allTags.find(function(tg) { return tg.id === tid; });
+      if (tag) tagHtml += '<span class="task-tag" style="background:' + (tag.color || 'var(--divider-color)') + '">' + escHtml(tag.title) + '</span>';
+    });
+  }
+  document.getElementById('dt-tags').innerHTML = tagHtml || '<span class="text-muted">None</span>';
+  
+  // Time
+  var spent = Math.round((t.timeSpent || 0) / 60000); 
+  var est = Math.round((t.timeEstimate || 0) / 60000);
+  document.getElementById('dt-time').textContent = spent + 'm / ' + est + 'm';
+  
+  // Notes
+  document.getElementById('dt-notes').textContent = t.notes || 'No notes.';
+  
+  document.getElementById('details-modal').style.display = 'flex';
+}
+
+function closeDetailsModal(event) {
+  document.getElementById('details-modal').style.display = 'none';
+}
+
+function toggleAllTasksSection() {
+  allTasksSectionCollapsed = !allTasksSectionCollapsed;
+  var list = document.getElementById('all-tasks-list');
+  var icon = document.querySelector('.task-section-all .toggle-icon');
+  if (list) list.style.display = allTasksSectionCollapsed ? 'none' : '';
+  if (icon) icon.classList.toggle('collapsed', allTasksSectionCollapsed);
+}
+
+function onTaskDragStart(ev, id) { draggedTaskId = id; ev.dataTransfer.setData('text/plain', id); }
+function onTaskChipDragStart(ev, id) { draggedTaskId = id; ev.dataTransfer.setData('text/plain', id); }
+function onDragOver(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+function onDragLeave(ev) { ev.currentTarget.classList.remove('drag-over'); }
+function onDrop(ev, idx) {
+  ev.preventDefault(); ev.currentTarget.classList.remove('drag-over'); var id = null; try { id = ev.dataTransfer.getData('text/plain'); } catch(e) {}
+  if (!id) id = draggedTaskId; if (!id && typeof PluginAPI !== 'undefined' && PluginAPI.getDraggedTaskId) id = PluginAPI.getDraggedTaskId(); if (!id) return;
+
+  var ps = getEffectivePeriods();
+  // Remove from all periods to prevent duplicates
+  for (var i = 0; i < ps.length; i++) if (ps[i].taskIds) ps[i].taskIds = ps[i].taskIds.filter(function(tid) { return tid !== id; });
+
+  if (!ps[idx].taskIds) ps[idx].taskIds = [];
+  ps[idx].taskIds.push(id);
+
+  setEffectivePeriods(ps); saveData(); renderTaskAssignment(); renderTodayPeriods();
+}
+function removeTaskFromPeriodAssign(idx, id) { var ps = getEffectivePeriods(); if (ps[idx] && ps[idx].taskIds) { ps[idx].taskIds = ps[idx].taskIds.filter(function(tid) { return tid !== id; }); setEffectivePeriods(ps); saveData(); renderTaskAssignment(); renderTodayPeriods(); } }
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function escHtml(s) { if (!s) return ""; var t = document.createElement("div"); t.textContent = s; return t.innerHTML; }
+function escAttr(s) { if (!s) return ""; return s.replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
+async function init() {
+  if (typeof PluginAPI === 'undefined') {
+    // If not ready, wait and try again
+    setTimeout(init, 100);
+    return;
+  }
+  console.log('PluginAPI detected, initializing plugin...');
+  currentPlanningDate = new Date();
+  await loadDataFromStore(); await loadTasks(); await loadProjects(); await loadTags(); updateDateSelector(); renderTodayPeriods();
+  if (typeof PluginAPI !== 'undefined' && PluginAPI.registerHook) {
+    PluginAPI.registerHook(PluginAPI.Hooks.PERSISTED_DATA_UPDATE, async function(p) { if (p.data) { data = JSON.parse(p.data); renderTodayPeriods(); renderTimetableList(); if (document.getElementById('assign').classList.contains('active')) renderTaskAssignment(); } });
+  }
+}
+window.addEventListener('pagehide', function() {
+  if (typeof PluginAPI !== 'undefined' && PluginAPI.persistDataSynced) {
+    console.log('Periods Manager: pagehide triggered, forcing final save...');
+    PluginAPI.persistDataSynced(JSON.stringify(data)).catch(function(err){
+      console.error('Periods Manager: final save failed', err);
+    });
+  }
+});
+
+init();
+</script>
+</body>
+</html>

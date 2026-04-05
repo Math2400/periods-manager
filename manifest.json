@@ -1,0 +1,25 @@
+{
+  "name": "Periods Manager",
+  "id": "periods-manager",
+  "manifestVersion": 1,
+  "version": "1.0.0",
+  "minSupVersion": "14.0.0",
+  "description": "Define time-bound periods (e.g. 8h-9h Bakery, 9h-12h Class) in your day and assign tasks to them. Supports weekly timetable templates with daily exceptions. The timer automatically starts the correct task based on the current period.",
+  "hooks": ["action", "currentTaskChange", "PERSISTED_DATA_UPDATE"],
+  "permissions": [
+    "getTasks",
+    "updateTask",
+    "showIndexHtmlAsView",
+    "openDialog",
+    "persistDataSynced",
+    "loadSyncedData",
+    "dispatchAction",
+    "getAllProjects",
+    "getAllTags"
+  ],
+  "iFrame": true,
+  "sidePanel": true,
+  "type": "standard",
+  "assets": [],
+  "icon": "icon.svg"
+}
