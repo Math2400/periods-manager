@@ -1,5 +1,7 @@
 # Periods Manager for Super Productivity
 
+[![Download Plugin](https://img.shields.io/badge/Download-plugin.zip-brightgreen)](./plugin.zip)
+
 **Periods Manager** est un plugin premium pour [Super Productivity](https://super-productivity.com/) qui introduit un système de planification par périodes (time-blocking). Il permet d'organiser votre journée en segments temporels et automatise la gestion de vos tâches actives.
 
 ## 🌟 Fonctionnalités
